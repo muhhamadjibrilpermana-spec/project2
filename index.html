@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Dynamic Collage Workstation</title>
+    <style>
+        :root {
+            --bg-base: #030407;
+            --bg-surface: #0a0d16;
+            --bg-element: #121726;
+            --bg-element-hover: #192035;
+            --accent: #06b6d4;
+            --accent-glow: rgba(6, 182, 212, 0.15);
+            --accent-gradient: linear-gradient(135deg, #06b6d4, #3b82f6);
+            --text-primary: #f8fafc;
+            --text-secondary: #64748b;
+            --border: #1e293b;
+            --destruct-neon: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            overflow-x: hidden;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+            max-width: 1600px;
+            width: 100%;
+            margin: 0 auto;
+            flex-grow: 1;
+        }
+
+        @media (max-width: 1024px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .dashboard {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: fit-content;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .brand-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .brand h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand p {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .server-status-led {
+            width: 10px;
+            height: 10px;
+            background-color: #10b981;
+            border-radius: 50%;
+            margin-top: 6px;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        .emoji-selector-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .category-bar {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .category-bar::-webkit-scrollbar { height: 4px; }
+        .category-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        .cat-btn {
+            background: var(--bg-element);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .cat-btn:hover, .cat-btn.active {
+            background: var(--bg-element-hover);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .emoji-grid-viewport {
+            height: 130px;
+            overflow-y: auto;
+            background: var(--bg-element);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .emoji-grid-viewport::-webkit-scrollbar { width: 6px; }
+        .emoji-grid-viewport::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .emoji-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border-radius: 8px;
+            padding: 4px;
+            text-align: center;
+        }
+
+        .emoji-btn:hover {
+            background: var(--bg-element-hover);
+            border-color: var(--accent);
+            transform: scale(1.1);
+        }
+
+        .text-injector-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+        }
+
+        .text-input-field {
+            background: var(--bg-element);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px;
+            border-radius: 8px;
+            outline: none;
+            font-size: 0.85rem;
+        }
+
+        .text-input-field:focus { border-color: var(--accent); }
+
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-element);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .color-picker-container label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            flex-grow: 1;
+        }
+
+        .chroma-node {
+            appearance: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        .chroma-node::-webkit-color-swatch { border: 1px solid var(--border); border-radius: 6px; }
+
+        /* UPLOAD FILE CONTAINER STYLING */
+        .upload-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+        }
+
+        .file-input-hidden {
+            display: none;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        .font-selector-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .font-selector-dropdown {
+            background: var(--bg-element);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px;
+            border-radius: 8px;
+            outline: none;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .font-selector-dropdown:focus {
+            border-color: var(--accent);
+        }
+
+        .slider-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slider-header label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .value-display { font-family: monospace; font-size: 0.8rem; color: var(--accent); }
+
+        .range-slider {
+            appearance: none;
+            background: var(--bg-element);
+            height: 5px;
+            border-radius: 99px;
+            outline: none;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .range-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 8px rgba(6, 182, 212, 0.8);
+        }
+
+        .dial-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .rotary-dial {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, var(--bg-element-hover) 40%, var(--bg-element) 100%);
+            border: 2px solid var(--border);
+            position: relative;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .rotary-dial::after {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            width: 4px;
+            height: 10px;
+            background-color: var(--accent);
+            border-radius: 2px;
+            transform: translateX(-50%);
+        }
+
+        .btn {
+            background: var(--accent-gradient);
+            color: #fff;
+            border: none;
+            padding: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .btn:hover { filter: brightness(1.1); box-shadow: 0 0 15px rgba(6, 182, 212, 0.3); }
+
+        .theater-panel {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            height: calc(100vh - 48px);
+            min-height: 600px;
+        }
+
+        .canvas-viewport {
+            flex-grow: 1;
+            width: 100%;
+            background-color: #020305;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 20px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #canvasContainer {
+            width: 700px;
+            height: 500px;
+            background-color: #05070f;
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.8);
+        }
+
+        .placed-emoji {
+            position: absolute;
+            user-select: none;
+            transform-origin: center center;
+            cursor: move;
+            display: inline-block;
+            line-height: 1;
+            white-space: nowrap;
+            font-weight: 700;
+            color: #ffffff;
+            font-family: sans-serif;
+        }
+
+        .placed-emoji img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .placed-emoji.selected {
+            outline: 1px dashed var(--accent);
+            outline-offset: 4px;
+        }
+
+        .marquee-box {
+            position: absolute;
+            border: 1px dashed var(--accent);
+            background: rgba(6, 182, 212, 0.1);
+            pointer-events: none;
+            display: none;
+            z-index: 1000;
+        }
+
+        .status-footer {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+
+        .status-msg { color: var(--text-secondary); }
+        .status-metric { color: var(--accent); font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <div class="workspace">
+        <main class="dashboard">
+            <div class="brand-header">
+                <div class="brand">
+                    <h1>Matrix Composer</h1>
+                    <p>Vector Node Synthesizer</p>
+                </div>
+                <div class="server-status-led"></div>
+            </div>
+
+            <div class="emoji-selector-panel">
+                <div class="section-label">Universal Object Directory</div>
+                <div class="category-bar" id="categoryBar">
+                    <button class="cat-btn active" data-cat="smileys">😊 Face</button>
+                    <button class="cat-btn" data-cat="animals">🐱 Animal</button>
+                    <button class="cat-btn" data-cat="food">🍏 Food</button>
+                    <button class="cat-btn" data-cat="activities">⚽ Sport</button>
+                    <button class="cat-btn" data-cat="symbols">🧩 Symbol</button>
+                </div>
+                <div class="emoji-grid-viewport">
+                    <div class="emoji-grid" id="emojiGrid"></div>
+                </div>
+            </div>
+
+            <div class="text-injector-wrapper">
+                <div class="section-label">Typography Core</div>
+                <input type="text" id="textNodeInput" class="text-input-field" placeholder="Enter custom text..." value="MATRIX">
+                
+                <div class="color-picker-container">
+                    <label for="textColorPicker">Vector Fill Color</label>
+                    <input type="color" id="textColorPicker" class="chroma-node" value="#06b6d4">
+                </div>
+                <button id="injectTextBtn" class="btn" style="padding: 8px;">Inject Text Node</button>
+            </div>
+
+            <div class="upload-wrapper">
+                <div class="section-label">Image Node Layer</div>
+                <label for="photoUploader" class="btn" style="padding: 8px; background: transparent; border: 1px dashed var(--accent); color: var(--accent);">Upload Photo</label>
+                <input type="file" id="photoUploader" class="file-input-hidden" accept="image/*">
+            </div>
+
+            <div class="controls">
+                <div class="section-label">Active Node Vectors</div>
+
+                <div class="font-selector-wrapper">
+                    <div class="slider-header">
+                        <label for="fontDropdown">Vector Family</label>
+                    </div>
+                    <select id="fontDropdown" class="font-selector-dropdown">
+                        <option value="sans-serif">Sans-Serif Baseline</option>
+                        <option value="serif">Classical Serif</option>
+                        <option value="monospace">Matrix Monospace</option>
+                        <option value="cursive">Fluid Cursive</option>
+                        <option value="fantasy">Impact Fantasy</option>
+                        <option value="'Courier New', Courier, monospace">Legacy Teleprinter</option>
+                        <option value="'Arial Black', Gadget, sans-serif">Heavy Weight</option>
+                    </select>
+                </div>
+                
+                <div class="slider-wrapper">
+                    <div class="slider-header">
+                        <label for="sizeSlider">Scale Dimension</label>
+                        <span id="sizeValue" class="value-display">64px</span>
+                    </div>
+                    <input type="range" id="sizeSlider" class="range-slider" min="16" max="250" value="64">
+                </div>
+
+                <div class="dial-container">
+                    <div class="slider-header" style="width: 100%;">
+                        <label>Rotational Azimuth</label>
+                        <span id="rotateValue" class="value-display">0°</span>
+                    </div>
+                    <div class="rotary-dial" id="rotaryDial"></div>
+                </div>
+
+                <button id="clearBtn" class="btn" style="background: var(--bg-element); border: 1px solid var(--border); color: var(--text-primary);">Wipe Layer</button>
+            </div>
+        </main>
+
+        <section class="theater-panel">
+            <div class="canvas-viewport">
+                <div id="canvasContainer">
+                    <div id="marqueeBox" class="marquee-box"></div>
+                </div>
+            </div>
+            
+            <div class="status-footer">
+                <div id="statusMsg" class="status-msg">Click & drag empty spaces to use marquee selection tools.</div>
+                <div id="statusMetric" class="status-metric">Nodes selected: 0</div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const emojiCategories = {
+            smileys: [[0x1F600, 0x1F637]],
+            animals: [[0x1F400, 0x1F43F]],
+            food: [[0x1F330, 0x1F36F]],
+            activities: [[0x1F380, 0x1F3C5]],
+            symbols: [[0x1F300, 0x1F320], [0x2600, 0x26FF], [0x2700, 0x27BF], [0x1F4A0, 0x1F4FF]]
+        };
+
+        const categoryBar = document.getElementById('categoryBar');
+        const emojiGrid = document.getElementById('emojiGrid');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const marqueeBox = document.getElementById('marqueeBox');
+        const textNodeInput = document.getElementById('textNodeInput');
+        const textColorPicker = document.getElementById('textColorPicker');
+        const injectTextBtn = document.getElementById('injectTextBtn');
+        const photoUploader = document.getElementById('photoUploader');
+        const fontDropdown = document.getElementById('fontDropdown');
+        const sizeSlider = document.getElementById('sizeSlider');
+        const sizeValue = document.getElementById('sizeValue');
+        const rotaryDial = document.getElementById('rotaryDial');
+        const rotateValue = document.getElementById('rotateValue');
+        const clearBtn = document.getElementById('clearBtn');
+        const statusMetric = document.getElementById('statusMetric');
+
+        let selectedElements = [];
+        let isDraggingElement = false;
+        let isMarqueeSelecting = false;
+        let isRotating = false;
+        
+        let dragOffsets = [];
+        let marqueeStart = { x: 0, y: 0 };
+        let currentRotationDegrees = 0;
+
+        function loadCategoryRegistry(categoryKey) {
+            emojiGrid.innerHTML = '';
+            emojiCategories[categoryKey].forEach(([start, end]) => {
+                for (let i = start; i <= end; i++) {
+                    try {
+                        const button = document.createElement('button');
+                        button.classList.add('emoji-btn');
+                        button.textContent = String.fromCodePoint(i);
+                        emojiGrid.appendChild(button);
+                    } catch(e) {}
+                }
+            });
+        }
+
+        categoryBar.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('cat-btn')) return;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            loadCategoryRegistry(e.target.dataset.cat);
+        });
+
+        emojiGrid.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('emoji-btn')) return;
+            clearAllSelections();
+            createNodeInstance(e.target.textContent, "emoji");
+        });
+
+        injectTextBtn.addEventListener('click', () => {
+            const content = textNodeInput.value.trim();
+            if(content === "") return;
+            clearAllSelections();
+            createNodeInstance(content, "text");
+        });
+
+        photoUploader.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                clearAllSelections();
+                createNodeInstance(event.target.result, "image");
+            };
+            reader.readAsDataURL(file);
+            e.target.value = ''; 
+        });
+
+        function clearAllSelections() {
+            selectedElements.forEach(el => el.classList.remove('selected'));
+            selectedElements = [];
+            updateTelemetryDisplay();
+        }
+
+        function createNodeInstance(contentString, nodeType) {
+            const el = document.createElement('div');
+            el.classList.add('placed-emoji');
+            el.dataset.size = 64;
+            el.dataset.rotation = 0;
+            
+            if (nodeType === "text") {
+                el.textContent = contentString;
+                el.style.color = textColorPicker.value;
+                el.style.fontFamily = fontDropdown.value;
+                el.dataset.isText = "true";
+            } else if (nodeType === "image") {
+                const img = document.createElement('img');
+                img.src = contentString;
+                el.appendChild(img);
+                el.style.width = "64px";
+                el.style.height = "64px";
+                el.dataset.isImage = "true";
+            } else {
+                el.textContent = contentString;
+            }
+            
+            el.style.left = `${300 + (Math.random() * 60 - 30)}px`;
+            el.style.top = `${200 + (Math.random() * 60 - 30)}px`;
+            
+            canvasContainer.appendChild(el);
+            attachNodeListeners(el);
+            addNodeToSelection(el);
+            updateNodeVisuals(el);
+        }
+
+        function addNodeToSelection(el) {
+            if (!selectedElements.includes(el)) {
+                el.classList.add('selected');
+                selectedElements.push(el);
+            }
+            updateTelemetryDisplay();
+        }
+
+        function updateTelemetryDisplay() {
+            statusMetric.textContent = `Nodes selected: ${selectedElements.length}`;
+            if (selectedElements.length === 1) {
+                sizeSlider.value = selectedElements[0].dataset.size;
+                sizeValue.textContent = `${sizeSlider.value}px`;
+                currentRotationDegrees = parseInt(selectedElements[0].dataset.rotation) || 0;
+                rotateValue.textContent = `${currentRotationDegrees}°`;
+                rotaryDial.style.transform = `rotate(${currentRotationDegrees}deg)`;
+                
+                if (selectedElements[0].dataset.isText === "true") {
+                    fontDropdown.value = selectedElements[0].style.fontFamily;
+                }
+            }
+        }
+
+        function updateNodeVisuals(element) {
+            if (element.dataset.isImage === "true") {
+                element.style.width = `${element.dataset.size}px`;
+                element.style.height = `${element.dataset.size}px`;
+            } else {
+                element.style.fontSize = `${element.dataset.size}px`;
+            }
+            element.style.transform = `rotate(${element.dataset.rotation}deg)`;
+        }
+
+        function attachNodeListeners(el) {
+            el.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                if (!e.shiftKey && !selectedElements.includes(el)) {
+                    clearAllSelections();
+                }
+                addNodeToSelection(el);
+                isDraggingElement = true;
+
+                dragOffsets = selectedElements.map(element => {
+                    return {
+                        el: element,
+                        startX: parseFloat(element.style.left),
+                        startY: parseFloat(element.style.top),
+                        mouseStartX: e.clientX,
+                        mouseStartY: e.clientY
+                    };
+                });
+            });
+        }
+
+        canvasContainer.addEventListener('mousedown', (e) => {
+            if (e.target !== canvasContainer) return;
+            clearAllSelections();
+            isMarqueeSelecting = true;
+            
+            const rect = canvasContainer.getBoundingClientRect();
+            marqueeStart.x = e.clientX - rect.left;
+            marqueeStart.y = e.clientY - rect.top;
+            
+            marqueeBox.style.left = `${marqueeStart.x}px`;
+            marqueeBox.style.top = `${marqueeStart.y}px`;
+            marqueeBox.style.width = '0px';
+            marqueeBox.style.height = '0px';
+            marqueeBox.style.display = 'block';
+        });
+
+        rotaryDial.addEventListener('mousedown', (e) => {
+            if (selectedElements.length === 0) return;
+            isRotating = true;
+            e.preventDefault();
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDraggingElement) {
+                dragOffsets.forEach(data => {
+                    const dx = e.clientX - data.mouseStartX;
+                    const dy = e.clientY - data.mouseStartY;
+                    data.el.style.left = `${data.startX + dx}px`;
+                    data.el.style.top = `${data.startY + dy}px`;
+                });
+            }
+
+            if (isMarqueeSelecting) {
+                const rect = canvasContainer.getBoundingClientRect();
+                const currentX = e.clientX - rect.left;
+                const currentY = e.clientY - rect.top;
+                
+                const boxX = Math.min(marqueeStart.x, currentX);
+                const boxY = Math.min(marqueeStart.y, currentY);
+                const boxW = Math.abs(marqueeStart.x - currentX);
+                const boxH = Math.abs(marqueeStart.y - currentY);
+                
+                marqueeBox.style.left = `${boxX}px`;
+                marqueeBox.style.top = `${boxY}px`;
+                marqueeBox.style.width = `${boxW}px`;
+                marqueeBox.style.height = `${boxH}px`;
+                
+                document.querySelectorAll('.placed-emoji').forEach(el => {
+                    const elLeft = parseFloat(el.style.left);
+                    const elTop = parseFloat(el.style.top);
+                    
+                    if (elLeft >= boxX && elLeft <= (boxX + boxW) && elTop >= boxY && elTop <= (boxY + boxH)) {
+                        addNodeToSelection(el);
+                    } else {
+                        if (!e.shiftKey) {
+                            el.classList.remove('selected');
+                            selectedElements = selectedElements.filter(item => item !== el);
+                        }
+                    }
+                });
+                updateTelemetryDisplay();
+            }
+
+            if (isRotating && selectedElements.length > 0) {
+                const dialRect = rotaryDial.getBoundingClientRect();
+                const dialCenterX = dialRect.left + dialRect.width / 2;
+                const dialCenterY = dialRect.top + dialRect.height / 2;
+                let angleDeg = Math.round(Math.atan2(e.clientY - dialCenterY, e.clientX - dialCenterX) * (180 / Math.PI)) + 90;
+                if (angleDeg < 0) angleDeg += 360;
+                
+                currentRotationDegrees = angleDeg;
+                rotateValue.textContent = `${currentRotationDegrees}°`;
+                rotaryDial.style.transform = `rotate(${currentRotationDegrees}deg)`;
+                
+                selectedElements.forEach(el => {
+                    el.dataset.rotation = currentRotationDegrees;
+                    updateNodeVisuals(el);
+                });
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDraggingElement = false;
+            isRotating = false;
+            if (isMarqueeSelecting) {
+                isMarqueeSelecting = false;
+                marqueeBox.style.display = 'none';
+            }
+        });
+
+        fontDropdown.addEventListener('change', (e) => {
+            selectedElements.forEach(el => {
+                if (el.dataset.isText === "true") {
+                    el.style.fontFamily = e.target.value;
+                }
+            });
+        });
+
+        sizeSlider.addEventListener('input', (e) => {
+            sizeValue.textContent = `${e.target.value}px`;
+            selectedElements.forEach(el => {
+                el.dataset.size = e.target.value;
+                updateNodeVisuals(el);
+            });
+        });
+
+        textColorPicker.addEventListener('input', (e) => {
+            selectedElements.forEach(el => {
+                if (el.dataset.isText === "true") {
+                    el.style.color = e.target.value;
+                }
+            });
+        });
+
+        clearBtn.addEventListener('click', () => {
+            document.querySelectorAll('.placed-emoji').forEach(el => el.remove());
+            clearAllSelections();
+        });
+
+        loadCategoryRegistry('smileys');
+    </script>
+</body>
+</html>
